@@ -76,10 +76,9 @@ func (d *Data) Draw(img *image.RGBA) error {
 	}
 
 	if d.step%2 == 1 {
-		x := d.step / 2
 		for i := 0; i < d.step; i++ {
 			y := r.Intn(d.step)
-			idx := x + y*d.step
+			idx := xhalf + y*d.step
 			points[idx] = true
 		}
 	}
