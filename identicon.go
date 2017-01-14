@@ -1,6 +1,7 @@
 package identicon
 
 import (
+	"crypto/md5"
 	"image"
 	"image/color"
 	"image/draw"
@@ -9,46 +10,92 @@ import (
 	"math/rand"
 )
 
-const (
-	length = 50
-	col    = 5
-	row    = 5
-)
-
 // A Data provides to construct identicon.
 type Data struct {
-	id    string
-	image *image.RGBA
-	color color.Color
+	id            string
+	hash          [md5.Size]byte
+	step          int
+	width, height int
 }
 
 // NewData returns a Data object.
 func NewData(id string) Data {
+
 	d := Data{
-		id:    id,
-		image: image.NewRGBA(image.Rect(0, 0, col*length, row*length)),
-		color: color.Black,
+		id:     id,
+		hash:   md5.Sum([]byte(id)),
+		step:   5,
+		width:  50,
+		height: 50,
 	}
-
-	// XXX:
-
-	draw.Draw(d.image, d.image.Bounds(),
-		&image.Uniform{color.White}, image.ZP, draw.Src)
-
-	for x := 0; x < col*length; x += length {
-		for y := 0; y < row*length; y += length {
-			fill := &image.Uniform{d.color}
-			if rand.Intn(10)%2 == 0 {
-				fill = &image.Uniform{color.White}
-			}
-			draw.Draw(d.image, image.Rect(x, y, x+length, y+length), fill, image.ZP, draw.Src)
-		}
-	}
-
 	return d
 }
 
 // Encode writes the Image d.img to w in PNG format. Any Image may be encoded,
 func (d *Data) Encode(w io.Writer) error {
-	return png.Encode(w, d.image)
+
+	img := image.NewRGBA(image.Rect(0, 0, d.step*d.width, d.step*d.height))
+	if err := d.Draw(img); err != nil {
+		return err
+	}
+	return png.Encode(w, img)
+}
+
+// Draw draws identicon in img.
+func (d *Data) Draw(img *image.RGBA) error {
+
+	// Color
+	fill := &image.Uniform{color.RGBA{
+		uint8(d.hash[0])<<2 | 0x30,
+		uint8(d.hash[1])<<2 | 0x30,
+		uint8(d.hash[2])<<2 | 0x30,
+		uint8(d.hash[3])<<2 | 0xf3,
+	}}
+
+	// Points
+	var seed int64
+	for i := 4; i < 8; i++ {
+		seed = seed << 8
+		seed += int64(d.hash[i])
+	}
+	r := rand.New(rand.NewSource(seed))
+	xhalf := d.step >> 1
+	half := d.step * xhalf
+	full := d.step * d.step
+
+	points := make([]bool, full)
+	for i, lim := 0, 0; i < full && lim < half; i++ {
+		x := r.Intn(xhalf)
+		y := r.Intn(d.step)
+		for _, idx := range [2]int{x + y*d.step, d.step - x - 1 + y*d.step} {
+			if !points[idx] {
+				points[idx] = true
+				lim++
+			}
+		}
+	}
+
+	if d.step%2 == 1 {
+		x := d.step / 2
+		for i := 0; i < d.step; i++ {
+			y := r.Intn(d.step)
+			idx := x + y*d.step
+			points[idx] = true
+		}
+	}
+
+	bounds := img.Bounds()
+	draw.Draw(img, bounds, &image.Uniform{color.White}, image.ZP, draw.Src)
+
+	for idx, p := range points {
+		if !p {
+			continue
+		}
+
+		i, j := idx%d.step, idx/d.step
+		x, y := i*d.width, j*d.height
+		draw.Draw(img, image.Rect(x, y, x+d.width, y+d.height), fill, image.ZP, draw.Src)
+	}
+
+	return nil
 }
