@@ -25,7 +25,7 @@ func main() {
 		panic(err)
 	}
 
-	d := identicon.NewData(id)
+	d := identicon.NewDataString(id)
 	if err := d.Encode(out); err != nil {
 		panic(err)
 	}

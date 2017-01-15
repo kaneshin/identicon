@@ -12,28 +12,28 @@ import (
 
 // A Data provides to construct identicon.
 type Data struct {
-	id            string
 	hash          [md5.Size]byte
 	step          int
 	width, height int
 }
 
-// NewData returns a Data object.
-func NewData(id string) Data {
-
-	d := Data{
-		id:     id,
-		hash:   md5.Sum([]byte(id)),
+// NewData returns a reference of Data.
+func NewData(b []byte) *Data {
+	return &Data{
+		hash:   md5.Sum(b),
 		step:   5,
 		width:  50,
 		height: 50,
 	}
-	return d
+}
+
+// NewDataString returns a reference of Data.
+func NewDataString(str string) *Data {
+	return NewData([]byte(str))
 }
 
 // Draw draws identicon in img.
 func (d *Data) Draw(img *image.RGBA) error {
-
 	// Color
 	fill := &image.Uniform{color.RGBA{
 		uint8(d.hash[0])<<2 | 0x30,

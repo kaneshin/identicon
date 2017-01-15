@@ -8,9 +8,10 @@ import (
 
 func TestData(t *testing.T) {
 
-	t.Run("NewData", func(t *testing.T) {
+	t.Run("NewDataString", func(t *testing.T) {
 		assert := assert.New(t)
-		d := NewData("wentworth")
-		assert.Equal("wentworth", d.id)
+		d := NewDataString("wentworth")
+		assert.NotNil(d)
+		assert.True(len(d.hash) > 0)
 	})
 }
