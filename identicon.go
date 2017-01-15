@@ -31,16 +31,6 @@ func NewData(id string) Data {
 	return d
 }
 
-// Encode writes the Image d.img to w in PNG format. Any Image may be encoded,
-func (d *Data) Encode(w io.Writer) error {
-
-	img := image.NewRGBA(image.Rect(0, 0, d.step*d.width, d.step*d.height))
-	if err := d.Draw(img); err != nil {
-		return err
-	}
-	return png.Encode(w, img)
-}
-
 // Draw draws identicon in img.
 func (d *Data) Draw(img *image.RGBA) error {
 
@@ -97,4 +87,14 @@ func (d *Data) Draw(img *image.RGBA) error {
 	}
 
 	return nil
+}
+
+// Encode writes the identicon image to w in PNG format.
+func (d *Data) Encode(w io.Writer) error {
+	img := image.NewRGBA(image.Rect(0, 0, d.step*d.width, d.step*d.height))
+	if err := d.Draw(img); err != nil {
+		return err
+	}
+
+	return png.Encode(w, img)
 }
