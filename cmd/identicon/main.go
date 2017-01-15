@@ -2,16 +2,13 @@ package main
 
 import (
 	"flag"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/kaneshin/identicon"
 )
 
 func main() {
 	flag.Parse()
-	rand.Seed(time.Now().UTC().UnixNano())
 
 	args := flag.Args()
 	if len(args) == 0 {
