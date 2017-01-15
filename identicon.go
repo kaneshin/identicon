@@ -10,6 +10,16 @@ import (
 	"math/rand"
 )
 
+// Rand returns a reference of rand.Rand giving seeds.
+func Rand(seeds []byte) *rand.Rand {
+	var seed int64
+	for _, s := range seeds {
+		seed = seed << 8
+		seed += int64(s)
+	}
+	return rand.New(rand.NewSource(seed))
+}
+
 // A Data provides to construct identicon.
 type Data struct {
 	hash          [md5.Size]byte
@@ -32,23 +42,25 @@ func NewDataString(str string) *Data {
 	return NewData([]byte(str))
 }
 
+// Color returns a reference of image.Uniform belonging to color.RGBA.
+func (d Data) Color() *image.Uniform {
+	r := Rand(d.hash[:8])
+	size := len(d.hash)
+	return &image.Uniform{color.RGBA{
+		uint8(d.hash[r.Intn(size)])<<2 | 0x30,
+		uint8(d.hash[r.Intn(size)])<<2 | 0x30,
+		uint8(d.hash[r.Intn(size)])<<2 | 0x30,
+		uint8(d.hash[r.Intn(size)])<<2 | 0xf3,
+	}}
+}
+
 // Draw draws identicon in img.
 func (d *Data) Draw(img *image.RGBA) error {
 	// Color
-	fill := &image.Uniform{color.RGBA{
-		uint8(d.hash[0])<<2 | 0x30,
-		uint8(d.hash[1])<<2 | 0x30,
-		uint8(d.hash[2])<<2 | 0x30,
-		uint8(d.hash[3])<<2 | 0xf3,
-	}}
+	fill := d.Color()
 
 	// Points
-	var seed int64
-	for i := 4; i < 8; i++ {
-		seed = seed << 8
-		seed += int64(d.hash[i])
-	}
-	r := rand.New(rand.NewSource(seed))
+	r := Rand(d.hash[8:])
 	xhalf := d.step >> 1
 	half := d.step * xhalf
 	full := d.step * d.step
